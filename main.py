@@ -4,6 +4,8 @@ import os
 import re
 from pathlib import Path
 
+from openai import AzureOpenAI
+
 from dotenv import load_dotenv
 
 # Python 3.14+: asyncio.get_event_loop() no longer creates a loop automatically,
@@ -57,6 +59,35 @@ API_HASH = env_required("API_HASH")
 CHANNELS_TO_MONITOR = [to_chat_id(c) for c in env_list("CHANNELS_TO_MONITOR")]
 MY_DESTINATION = to_chat_id(env_required("MY_DESTINATION"))
 KEYWORDS = [k.lower() for k in env_list("KEYWORDS")]
+
+ai_endpoint = env_required("AI_ENDPOINT")
+ai_model_name = env_required("AI_MODEL_NAME")
+ai_deployment = env_required("AI_DEPLOYMENT")
+
+ai_subscription_key = env_required("AI_SUBSCRIPTION_KEY")
+ai_api_version = env_required("AI_API_VERSION")
+
+ai_client = AzureOpenAI(
+    api_version=ai_api_version,
+    azure_endpoint=ai_endpoint,
+    api_key=ai_subscription_key,
+)
+
+response = ai_client.chat.completions.create(
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a helpful assistant.",
+        },
+        {
+            "role": "user",
+            "content": "I am going to Paris, what should I see?",
+        }
+    ],
+    max_completion_tokens=16384,
+    model=ai_deployment
+)
+
 
 if not CHANNELS_TO_MONITOR:
     raise SystemExit("Ошибка конфигурации: CHANNELS_TO_MONITOR пуст")
