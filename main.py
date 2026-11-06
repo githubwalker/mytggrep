@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from openai import AzureOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from dotenv import load_dotenv
 
@@ -73,21 +74,26 @@ ai_client = AzureOpenAI(
     api_key=ai_subscription_key,
 )
 
+messages: list[ChatCompletionMessageParam] = [
+    {
+        "role": "system",
+        "content": "please response yes or no if text contains wish to buy rubles (RUB) in exchange of dinars (RSD)",
+    },
+    {
+        "role": "user",
+        #"content": "will buy you rubles in exchange of my dinars",
+        # "content": "I have a little bit of dinars want to exchange on you rubles. google current exchange rate ",
+        "content": "I have a little rubles. need to buy you dinars",
+    },
+]
+
 response = ai_client.chat.completions.create(
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a helpful assistant.",
-        },
-        {
-            "role": "user",
-            "content": "I am going to Paris, what should I see?",
-        }
-    ],
+    messages=messages,
     max_completion_tokens=16384,
     model=ai_deployment
 )
 
+print(f'does user want to buy rubles in exchange of dinars? {response.choices[0].message.content}')
 
 if not CHANNELS_TO_MONITOR:
     raise SystemExit("Ошибка конфигурации: CHANNELS_TO_MONITOR пуст")
