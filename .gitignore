@@ -1,0 +1,9 @@
+.idea
+.venv
+docs
+*.session
+*.session-journal
+.env
+.env.example
+__pycache__
+
