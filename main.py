@@ -27,7 +27,7 @@ async def forward_matched_messages(client, message):
     if not await asyncio.to_thread(filter_text, message.text):
         return
 
-    # Форвардим сообщение целиком в ваш канал
+    # Forward the whole message to the destination channel
     await message.forward(MY_DESTINATION)
     print(f"Message passed PRELIMINARY_FILTER and AI_FILTER and was forwarded to channel {MY_DESTINATION}")
 

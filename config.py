@@ -6,8 +6,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Настройки читаются из файла .env рядом с main.py (см. .env.example).
-# Переменные окружения, заданные явно (например, на VPS), имеют приоритет.
+# Settings are read from the .env file in the app folder (see .env.example).
+# Environment variables set explicitly (e.g. on the VPS) take priority.
 load_dotenv(Path(__file__).with_name(".env"))
 
 
@@ -26,12 +26,12 @@ def env_list(name: str) -> list[str]:
         raise SystemExit(f"Configuration error: {name} must be a JSON array of strings, e.g. [\"a\", \"b\"]: {e}")
     if not isinstance(items, list):
         raise SystemExit(f"Configuration error: {name} must be a JSON array, e.g. [\"a\", \"b\"]")
-    # Пустые строки отбрасываем: пустое ключевое слово совпало бы с любым сообщением
+    # Drop empty strings: an empty item would match every message
     return [str(item).strip() for item in items if str(item).strip()]
 
 
 def to_chat_id(value: str) -> int | str:
-    # Числовые ID ("-100...") должны быть int, иначе фильтр Pyrogram их не сопоставит
+    # Numeric IDs ("-100...") must be int, otherwise the Pyrogram chat filter will not match them
     try:
         return int(value)
     except ValueError:
