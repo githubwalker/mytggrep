@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import re
 from pathlib import Path
 
 from openai import AzureOpenAI
@@ -14,6 +13,8 @@ from dotenv import load_dotenv
 asyncio.set_event_loop(asyncio.new_event_loop())
 
 from pyrogram import Client, filters
+
+from text_filter import FilterSyntaxError, compile_filter
 
 # Настройки читаются из файла .env рядом с main.py (см. .env.example).
 # Переменные окружения, заданные явно (например, на VPS), имеют приоритет.
@@ -59,7 +60,17 @@ API_ID = env_int("API_ID")
 API_HASH = env_required("API_HASH")
 CHANNELS_TO_MONITOR = [to_chat_id(c) for c in env_list("CHANNELS_TO_MONITOR")]
 MY_DESTINATION = to_chat_id(env_required("MY_DESTINATION"))
-KEYWORDS = [k.lower() for k in env_list("KEYWORDS")]
+PRELIMINARY_FILTER = env_required("PRELIMINARY_FILTER")
+
+try:
+    _preliminary_filter = compile_filter(PRELIMINARY_FILTER)
+except FilterSyntaxError as e:
+    raise SystemExit(f"Ошибка конфигурации: PRELIMINARY_FILTER: {e}")
+
+
+def preliminary_filter(text: str) -> bool:
+    """Быстрая проверка текста по выражению PRELIMINARY_FILTER из .env."""
+    return _preliminary_filter(text)
 
 ai_endpoint = env_required("AI_ENDPOINT")
 ai_model_name = env_required("AI_MODEL_NAME")
@@ -97,22 +108,16 @@ print(f'does user want to buy rubles in exchange of dinars? {response.choices[0]
 
 if not CHANNELS_TO_MONITOR:
     raise SystemExit("Ошибка конфигурации: CHANNELS_TO_MONITOR пуст")
-if not KEYWORDS:
-    raise SystemExit("Ошибка конфигурации: KEYWORDS пуст")
 
 app = Client("my_account", api_id=API_ID, api_hash=API_HASH)
 
 
 @app.on_message(filters.chat(CHANNELS_TO_MONITOR) & filters.text)
 async def forward_matched_messages(client, message):
-    text_lower = message.text.lower()
-
-    for word in KEYWORDS:
-        if re.search(r'\b' + re.escape(word) + r'\b', text_lower):
-            # Форвардим сообщение целиком в ваш канал
-            await message.forward(MY_DESTINATION)
-            print(f"Сообщение с ключевым словом '{word}' было найдено и должно быть отправлено в канал {MY_DESTINATION}")
-            break
+    if preliminary_filter(message.text):
+        # Форвардим сообщение целиком в ваш канал
+        await message.forward(MY_DESTINATION)
+        print(f"Сообщение прошло PRELIMINARY_FILTER и отправлено в канал {MY_DESTINATION}")
 
 
 if __name__ == "__main__":
