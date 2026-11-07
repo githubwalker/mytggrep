@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 
 from openai import AzureOpenAI
-from openai.types.chat import ChatCompletionMessageParam
 
 from dotenv import load_dotenv
 
@@ -14,6 +13,7 @@ asyncio.set_event_loop(asyncio.new_event_loop())
 
 from pyrogram import Client, filters
 
+from ai_text_filter import make_ai_filter
 from preliminary_text_filter import FilterSyntaxError, compile_filter
 
 # Настройки читаются из файла .env рядом с main.py (см. .env.example).
@@ -83,28 +83,21 @@ ai_client = AzureOpenAI(
     api_version=ai_api_version,
     azure_endpoint=ai_endpoint,
     api_key=ai_subscription_key,
+    timeout=60,
 )
 
-messages: list[ChatCompletionMessageParam] = [
-    {
-        "role": "system",
-        "content": "please response yes or no if text contains wish to buy rubles (RUB) in exchange of dinars (RSD)",
-    },
-    {
-        "role": "user",
-        #"content": "will buy you rubles in exchange of my dinars",
-        # "content": "I have a little bit of dinars want to exchange on you rubles. google current exchange rate ",
-        "content": "I have a little rubles. need to buy you dinars",
-    },
-]
+AI_FILTER = env_required("AI_FILTER")
 
-response = ai_client.chat.completions.create(
-    messages=messages,
-    max_completion_tokens=16384,
-    model=ai_deployment
-)
+_ai_filter = make_ai_filter(ai_client, ai_deployment, AI_FILTER)
 
-print(f'does user want to buy rubles in exchange of dinars? {response.choices[0].message.content}')
+
+def ai_filter(text: str) -> bool:
+    """Ask the AI model the AI_FILTER question about the text; True only if it answers "yes".
+
+    Blocking call: from async code use ``await asyncio.to_thread(ai_filter, text)``.
+    """
+    return _ai_filter(text)
+
 
 if not CHANNELS_TO_MONITOR:
     raise SystemExit("Configuration error: CHANNELS_TO_MONITOR is empty")
@@ -114,10 +107,20 @@ app = Client("my_account", api_id=API_ID, api_hash=API_HASH)
 
 @app.on_message(filters.chat(CHANNELS_TO_MONITOR) & filters.text)
 async def forward_matched_messages(client, message):
-    if preliminary_filter(message.text):
-        # Форвардим сообщение целиком в ваш канал
-        await message.forward(MY_DESTINATION)
-        print(f"Message passed PRELIMINARY_FILTER and was forwarded to channel {MY_DESTINATION}")
+    text = message.text
+
+    # Cheap substring check first, so only relevant messages reach the (slow, paid) AI
+    if not preliminary_filter(text):
+        return
+
+    # The OpenAI client is synchronous: run it in a thread so Pyrogram keeps receiving messages
+    if not await asyncio.to_thread(ai_filter, text):
+        print(f"Message passed PRELIMINARY_FILTER but was rejected by AI_FILTER (chat {message.chat.id})")
+        return
+
+    # Форвардим сообщение целиком в ваш канал
+    await message.forward(MY_DESTINATION)
+    print(f"Message passed PRELIMINARY_FILTER and AI_FILTER and was forwarded to channel {MY_DESTINATION}")
 
 
 if __name__ == "__main__":
