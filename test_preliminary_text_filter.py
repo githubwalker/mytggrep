@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from dotenv import dotenv_values
 
-from text_filter import FilterSyntaxError, compile_filter
+from preliminary_text_filter import FilterSyntaxError, compile_filter
 
 
 @pytest.mark.parametrize(

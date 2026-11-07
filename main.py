@@ -14,7 +14,7 @@ asyncio.set_event_loop(asyncio.new_event_loop())
 
 from pyrogram import Client, filters
 
-from text_filter import FilterSyntaxError, compile_filter
+from preliminary_text_filter import FilterSyntaxError, compile_filter
 
 # Настройки читаются из файла .env рядом с main.py (см. .env.example).
 # Переменные окружения, заданные явно (например, на VPS), имеют приоритет.
@@ -24,7 +24,7 @@ load_dotenv(Path(__file__).with_name(".env"))
 def env_required(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
-        raise SystemExit(f"Ошибка конфигурации: переменная {name} не задана (см. .env.example)")
+        raise SystemExit(f"Configuration error: variable {name} is not set (see .env.example)")
     return value
 
 
@@ -33,9 +33,9 @@ def env_list(name: str) -> list[str]:
     try:
         items = json.loads(raw)
     except json.JSONDecodeError as e:
-        raise SystemExit(f"Ошибка конфигурации: {name} должен быть JSON-массивом строк, например [\"a\", \"b\"]: {e}")
+        raise SystemExit(f"Configuration error: {name} must be a JSON array of strings, e.g. [\"a\", \"b\"]: {e}")
     if not isinstance(items, list):
-        raise SystemExit(f"Ошибка конфигурации: {name} должен быть JSON-массивом, например [\"a\", \"b\"]")
+        raise SystemExit(f"Configuration error: {name} must be a JSON array, e.g. [\"a\", \"b\"]")
     # Пустые строки отбрасываем: пустое ключевое слово совпало бы с любым сообщением
     return [str(item).strip() for item in items if str(item).strip()]
 
@@ -53,7 +53,7 @@ def env_int(name: str) -> int:
     try:
         return int(raw)
     except ValueError:
-        raise SystemExit(f"Ошибка конфигурации: {name} должен быть числом, получено {raw!r}")
+        raise SystemExit(f"Configuration error: {name} must be a number, got {raw!r}")
 
 
 API_ID = env_int("API_ID")
@@ -65,7 +65,7 @@ PRELIMINARY_FILTER = env_required("PRELIMINARY_FILTER")
 try:
     _preliminary_filter = compile_filter(PRELIMINARY_FILTER)
 except FilterSyntaxError as e:
-    raise SystemExit(f"Ошибка конфигурации: PRELIMINARY_FILTER: {e}")
+    raise SystemExit(f"Configuration error: PRELIMINARY_FILTER: {e}")
 
 
 def preliminary_filter(text: str) -> bool:
@@ -107,7 +107,7 @@ response = ai_client.chat.completions.create(
 print(f'does user want to buy rubles in exchange of dinars? {response.choices[0].message.content}')
 
 if not CHANNELS_TO_MONITOR:
-    raise SystemExit("Ошибка конфигурации: CHANNELS_TO_MONITOR пуст")
+    raise SystemExit("Configuration error: CHANNELS_TO_MONITOR is empty")
 
 app = Client("my_account", api_id=API_ID, api_hash=API_HASH)
 
@@ -117,9 +117,9 @@ async def forward_matched_messages(client, message):
     if preliminary_filter(message.text):
         # Форвардим сообщение целиком в ваш канал
         await message.forward(MY_DESTINATION)
-        print(f"Сообщение прошло PRELIMINARY_FILTER и отправлено в канал {MY_DESTINATION}")
+        print(f"Message passed PRELIMINARY_FILTER and was forwarded to channel {MY_DESTINATION}")
 
 
 if __name__ == "__main__":
-    print("Успешно запущено! Мониторю указанные каналы...")
+    print("Started successfully! Monitoring the configured channels...")
     app.run()
