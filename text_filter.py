@@ -63,5 +63,15 @@ def filter_text(text: str) -> bool:
     Blocking (network call): from async code use ``await asyncio.to_thread(filter_text, text)``.
     """
     if not preliminary_filter(text):
+        print(f"Message {text} doesnt match to PRELIMINARY_FILTER")
         return False
-    return ai_filter(text)
+
+    print(f"Message {text} passed PRELIMINARY_FILTER")
+
+    if not ai_filter(text):
+        print(f"Message {text} doesnt match to AI_FILTER")
+        return False
+
+    print(f"Message {text} passed AI_FILTER")
+
+    return True
