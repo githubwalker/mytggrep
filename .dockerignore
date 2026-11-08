@@ -1,0 +1,7 @@
+# Allow-list: everything is excluded except what the image needs.
+# (.venv, .git, .idea, tests, caches, llm-hints never reach the build context)
+*
+!requirements.txt
+!*.py
+!.env
+!my_account.session
