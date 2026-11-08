@@ -25,8 +25,6 @@ def use_prod_env(monkeypatch):
     importlib.reload(text_filter)
 
 
-# @pytest.mark.skip
-
 @pytest.skip
 @pytest.mark.parametrize("text_to_pass", [
 'Белград. Личная встреча продам от 400 до 4000 евро за рубли на карту по курсу 99,90',
