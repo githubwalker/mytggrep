@@ -98,7 +98,7 @@ def test_invalid_expressions_rejected(expr):
 
 def test_env_example_setting_is_valid():
     """PRELIMINARY_FILTER in .env.example survives .env quoting and compiles."""
-    env = dotenv_values(Path(__file__).with_name(".env.example"))
+    env = dotenv_values(Path(__file__).parent.parent / ".env.example")
     f = compile_filter(env["PRELIMINARY_FILTER"])
     assert f("Куплю рубли за динары") is True
     assert f("Продам велосипед") is False
