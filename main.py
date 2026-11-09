@@ -1,10 +1,11 @@
 import asyncio
+import html
 
 # Python 3.14+: asyncio.get_event_loop() no longer creates a loop automatically,
 # while Pyrogram 2.0.x calls it at import time. Create the loop beforehand.
 asyncio.set_event_loop(asyncio.new_event_loop())
 
-from pyrogram import Client, filters
+from pyrogram import Client, enums, filters
 
 from config import env_int, env_list, env_required, to_chat_id
 from text_filter import filter_text
@@ -28,8 +29,19 @@ async def forward_matched_messages(client, message):
         return
 
     # Forward the whole message to the destination channel
-    await message.forward(MY_DESTINATION)
-    print(f"Message passed PRELIMINARY_FILTER and AI_FILTER and was forwarded to channel {MY_DESTINATION}")
+    forwarded = await message.forward(MY_DESTINATION)
+
+    # The forward header shows only the author, not the group/channel it was posted in,
+    # so reply to the forwarded message with the source chat name, linked to the original message
+    source_name = message.chat.title or message.chat.username or str(message.chat.id)
+    await client.send_message(
+        MY_DESTINATION,
+        f'📍 Source: <a href="{html.escape(message.link)}">{html.escape(source_name)}</a>',
+        reply_to_message_id=forwarded.id,
+        disable_web_page_preview=True,
+        parse_mode=enums.ParseMode.HTML,
+    )
+    print(f"Message from '{source_name}' passed PRELIMINARY_FILTER and AI_FILTER and was forwarded to channel {MY_DESTINATION}")
 
 
 if __name__ == "__main__":
