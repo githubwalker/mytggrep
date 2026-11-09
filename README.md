@@ -7,7 +7,17 @@ A Telegram "grep": it watches chosen channels and groups from **your own Telegra
 
 ## Required files
 
-The app needs two files next to `main.py`. Neither is in git. Both are secrets.
+> **Before you run or deploy, put both files in the project root, next to `main.py`:**
+>
+> ```
+> mytggrep/
+> ├── .env                  ← create it yourself
+> ├── my_account.session    ← create it yourself
+> ├── main.py
+> └── ...
+> ```
+>
+> Neither file is in git, because both are secrets. A fresh clone doesn't have them, so you have to add them to every machine yourself, including the server. Without `.env` the app stops at startup. Without `my_account.session` the app asks for a Telegram login, which can't be answered on a server or in Docker. The Docker build also fails if either file is missing.
 
 ### `.env`: settings
 
