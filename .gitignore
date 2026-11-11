@@ -4,6 +4,5 @@ docs
 *.session
 *.session-journal
 .env
-.env.example
 __pycache__
 .pytest_cache/
