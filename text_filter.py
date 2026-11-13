@@ -7,11 +7,7 @@ Both filters are configured from .env (PRELIMINARY_FILTER, AI_FILTER, AI_*) when
 module is imported, so configuration errors stop the app at startup.
 """
 
-from urllib.parse import urlsplit
-
-from openai import AzureOpenAI, OpenAI
-
-from ai_text_filter import make_ai_filter
+from ai_text_filter import make_ai_client, make_ai_filter
 from config import env_required
 from preliminary_text_filter import FilterSyntaxError, compile_filter
 
@@ -33,24 +29,7 @@ ai_deployment = env_required("AI_DEPLOYMENT")
 ai_subscription_key = env_required("AI_SUBSCRIPTION_KEY")
 ai_api_version = env_required("AI_API_VERSION")
 
-ai_client: OpenAI
-if ai_api_version.casefold() == "v1":
-    # Azure "v1" API: no api-version query parameter, works for Azure OpenAI and
-    # for Foundry models (Kimi, DeepSeek, Llama...). Only scheme + host of AI_ENDPOINT
-    # are used, so a Foundry project URL (.../api/projects/<name>) is fine too.
-    _endpoint = urlsplit(ai_endpoint)
-    ai_client = OpenAI(
-        base_url=f"{_endpoint.scheme}://{_endpoint.netloc}/openai/v1/",
-        api_key=ai_subscription_key,
-        timeout=60,
-    )
-else:
-    ai_client = AzureOpenAI(
-        api_version=ai_api_version,
-        azure_endpoint=ai_endpoint,
-        api_key=ai_subscription_key,
-        timeout=60,
-    )
+ai_client = make_ai_client(ai_endpoint, ai_subscription_key, ai_api_version)
 
 AI_FILTER = env_required("AI_FILTER")
 

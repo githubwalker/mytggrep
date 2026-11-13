@@ -2,7 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from ai_text_filter import ANSWER_FORMAT, is_yes, make_ai_filter
+from openai import AzureOpenAI
+
+from ai_text_filter import ANSWER_FORMAT, is_yes, make_ai_client, make_ai_filter
 
 
 class FakeCompletions:
@@ -58,3 +60,26 @@ def test_ai_filter_returns_false_on_exception(capsys):
     ai_filter = make_ai_filter(client, "my-deployment", "Is it about rubles?")
     assert ai_filter("куплю рубли") is False
     assert "TimeoutError: boom" in capsys.readouterr().err
+
+
+def test_make_ai_client_dated_version_uses_azure_client():
+    client = make_ai_client("https://res.openai.azure.com/", "key", "2024-12-01-preview")
+    assert isinstance(client, AzureOpenAI)
+
+
+@pytest.mark.parametrize("version", ["v1", "V1"])
+@pytest.mark.parametrize(
+    ("endpoint", "base_url"),
+    [
+        (
+            "https://res.services.ai.azure.com/api/projects/proj",
+            "https://res.services.ai.azure.com/openai/v1/",
+        ),
+        ("https://res.openai.azure.com/", "https://res.openai.azure.com/openai/v1/"),
+        ("https://res.openai.azure.com", "https://res.openai.azure.com/openai/v1/"),
+    ],
+)
+def test_make_ai_client_v1_uses_v1_base_url(version, endpoint, base_url):
+    client = make_ai_client(endpoint, "key", version)
+    assert not isinstance(client, AzureOpenAI)
+    assert str(client.base_url) == base_url

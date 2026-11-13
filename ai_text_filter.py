@@ -2,14 +2,29 @@
 
 import sys
 from typing import Callable
+from urllib.parse import urlsplit
 
-from openai import OpenAI
+from openai import AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 TextPredicate = Callable[[str], bool]
 
 # Appended to the AI_FILTER prompt so the answer is easy to parse
 ANSWER_FORMAT = "Respond with exactly one word: yes or no."
+
+
+def make_ai_client(endpoint: str, api_key: str, api_version: str) -> OpenAI:
+    """Client for the Azure endpoint; ``api_version`` "v1" selects the version-less v1 API.
+
+    v1 has no api-version query parameter and works for Azure OpenAI and for Foundry
+    models (Kimi, DeepSeek, Llama...). Only scheme + host of ``endpoint`` are used then,
+    so a Foundry project URL (.../api/projects/<name>) is fine too.
+    Any other ``api_version`` (e.g. "2024-12-01-preview") goes through ``AzureOpenAI``.
+    """
+    if api_version.casefold() == "v1":
+        url = urlsplit(endpoint)
+        return OpenAI(base_url=f"{url.scheme}://{url.netloc}/openai/v1/", api_key=api_key, timeout=60)
+    return AzureOpenAI(api_version=api_version, azure_endpoint=endpoint, api_key=api_key, timeout=60)
 
 
 def is_yes(answer: str | None) -> bool:
