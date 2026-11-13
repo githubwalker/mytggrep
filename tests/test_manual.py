@@ -114,6 +114,10 @@ def test_text_should_pass(text_to_pass: str):
 За рубли
 Старый дорчол''',
 
+'Поменяю рубли на динары. Личная встреча. Курс гугл',
+'Привет! Куплю 130€ или 15.500 дин за безнал ₽',
+'обменяю 50к руб на 63к RSD',
+
 ])
 def test_text_should_not_pass(text_not_to_pass: str):
     bok = text_filter.filter_text(text_not_to_pass)
