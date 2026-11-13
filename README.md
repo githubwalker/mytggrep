@@ -42,6 +42,10 @@ AI_ENDPOINT="https://your-resource.openai.azure.com/"
 AI_MODEL_NAME="your-model"
 AI_DEPLOYMENT="your-deployment"
 AI_SUBSCRIPTION_KEY="your-azure-openai-key"
+# API version, e.g. "2024-12-01-preview" (Azure OpenAI models),
+# or "v1" for the version-less v1 API (recommended for Foundry models like Kimi, DeepSeek...;
+# a Foundry project URL like https://res.services.ai.azure.com/api/projects/proj works as AI_ENDPOINT).
+# Not the model version date shown in the deployment.
 AI_API_VERSION="2024-12-01-preview"
 
 # AI filter: a yes/no question the model is asked about each message
