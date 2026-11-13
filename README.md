@@ -90,6 +90,7 @@ new message in a watched chat
 | File | Purpose |
 |---|---|
 | `main.py` | Pyrogram client: receives messages, runs the filters, sends one repost per match (source link + author + original formatting) |
+| `html_splitter.py` | Splits a long HTML repost into chunks within Telegram's 4096-character limit; tags are closed and reopened at chunk borders, so every chunk is valid HTML |
 | `text_filter.py` | Reads the filter settings from `.env` and chains the two filters: preliminary first, AI only if it passed |
 | `preliminary_text_filter.py` | Parses the `PRELIMINARY_FILTER` expression safely (with `ast`, never executed) |
 | `ai_text_filter.py` | Asks the model the yes/no question |
