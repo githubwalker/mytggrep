@@ -1,9 +1,12 @@
 # mytggrep
 
-A Telegram "grep": it watches chosen channels and groups from **your own Telegram account**. When a message matches your filters, it reposts the message to your channel. Each repost shows:
+A Telegram "grep": it watches chosen channels and groups from **your own Telegram account**. When a message matches your filters, a **bot** reposts the message to your channel. Each repost shows:
 
 - the source chat's name, which links to the original message
 - the author
+- the original text with its formatting; a text too long for one Telegram message is split into several
+
+The bot is there for notifications: Telegram doesn't notify you about posts you made yourself, so reposts from your own account would arrive silently. Posts from the bot notify you like any other channel post.
 
 ## Required files
 
@@ -28,10 +31,13 @@ A Telegram "grep": it watches chosen channels and groups from **your own Telegra
 API_ID=12345678
 API_HASH=0123456789abcdef0123456789abcdef
 
+# Bot that sends the reposts (from @BotFather, see below)
+BOT_TOKEN=1234567890:AAAbbbCCCdddEEEfffGGGhhhIIIjjjKKKlll
+
 # Chats to watch: IDs of private chats (with the -100 prefix) or @usernames of public ones
 CHANNELS_TO_MONITOR=["-1001234567890", "@public_channel"]
 
-# Where matches are sent: a chat ID, or "me" for Saved Messages
+# Where matches are sent: ID of a channel or group where the bot is an admin
 MY_DESTINATION=-1001234567890
 
 # Preliminary filter (see below)
@@ -65,13 +71,20 @@ python main.py
 
 Log in when it asks: enter your phone number, then the code Telegram sends you, then your 2FA password if you have one. `my_account.session` then appears in the project folder. Stop the app with Ctrl+C. From now on the app starts without asking, locally and in Docker.
 
+### The bot
+
+1. In Telegram, open [@BotFather](https://t.me/BotFather), send `/newbot` and follow the steps. It gives you a token: put it in `.env` as `BOT_TOKEN`.
+2. Add the bot to the `MY_DESTINATION` channel as an admin with the right to post messages. Without that, sending fails.
+
+The bot doesn't need a login: on first start the app creates `mygrep_bot.session` from the token by itself, locally and in Docker. The bot only sends; it doesn't read the watched chats (your account does that).
+
 ## How it works
 
 ```
 new message in a watched chat
   → preliminary filter   (local, free)
   → AI filter            (Azure OpenAI, costs tokens)
-  → repost to MY_DESTINATION
+  → bot reposts to MY_DESTINATION (split into several messages if longer than 4096 characters)
 ```
 
 ### Filters
@@ -89,7 +102,7 @@ new message in a watched chat
 
 | File | Purpose |
 |---|---|
-| `main.py` | Pyrogram client: receives messages, runs the filters, sends one repost per match (source link + author + original formatting) |
+| `main.py` | Two Pyrogram clients: your account receives messages and runs the filters; the bot sends the repost of each match (source link + author + original formatting) |
 | `html_splitter.py` | Splits a long HTML repost into chunks within Telegram's 4096-character limit; tags are closed and reopened at chunk borders, so every chunk is valid HTML |
 | `text_filter.py` | Reads the filter settings from `.env` and chains the two filters: preliminary first, AI only if it passed |
 | `preliminary_text_filter.py` | Parses the `PRELIMINARY_FILTER` expression safely (with `ast`, never executed) |
