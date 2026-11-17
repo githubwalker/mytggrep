@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from dotenv import dotenv_values
 
+import preliminary_text_filter
 from preliminary_text_filter import FilterSyntaxError, compile_filter
 
 
@@ -77,6 +78,42 @@ def test_cyrillic_and_latin_mixed(text, expected):
 )
 def test_not(text, expected):
     f = compile_filter('"рубл" and not "продам"')
+    assert f(text) is expected
+
+@pytest.mark.parametrize(
+    "text",
+    ["перестанов", "сервис"]
+)
+def test_should_fail(text:str):
+    preliminary_text_filter="""
+  ("куплю" or "нужен" or "нужны" or "ищу" or "меняю" or "прода" or "sell" or "buy") 
+  and (("rsd" or "dinar" or "динар" or "eur" or "евро" or "€") 
+  or ("rub" or "rur" or "рубл" or "р."))
+  and not ("перестанов" or "сервис")
+    """
+    f = compile_filter(preliminary_text_filter)
+    assert f(text) is False
+
+MULTILINE_FILTER = """
+  ("куплю" or "нужен" or "нужны" or "ищу" or "меняю" or "прода" or "sell" or "buy")
+  and (("rsd" or "dinar" or "динар" or "eur" or "евро" or "€") or ("rub" or "rur" or "рубл" or "р."))
+  and not ("перестанов" or "сервис")
+    """
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Куплю евро за динары", True),
+        ("Продам 100 EUR", True),
+        ("Меняю рубли, перестановка денег", False),  # excluded by "перестанов"
+        ("Наш сервис: куплю евро", False),  # excluded by "сервис"
+        ("Куплю велосипед", False),  # no currency
+        ("Курс евро вырос", False),  # no buy/sell word
+    ],
+)
+def test_multiline_expression(text, expected):
+    f = compile_filter(MULTILINE_FILTER)
     assert f(text) is expected
 
 

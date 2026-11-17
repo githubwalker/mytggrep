@@ -8,6 +8,8 @@ Expression syntax (a safe subset of Python, parsed with ``ast``, never executed)
 * ``and`` / ``or``  - logical operators, parentheses for grouping
 * ``not``           - negation, e.g. ``"buy" and not "sell"``
 * ``TRUE``/``FALSE`` - match every text / match no text
+
+The expression may span several lines.
 """
 
 import ast
@@ -22,8 +24,11 @@ class FilterSyntaxError(ValueError):
 
 def compile_filter(expression: str) -> TextPredicate:
     """Parse the expression once and return a fast predicate ``text -> bool``."""
+    # Allow multi-line expressions (e.g. in .env): Python would treat a newline outside
+    # brackets as the end of the expression, so join the lines first
+    single_line = " ".join(line.strip() for line in expression.splitlines()).strip()
     try:
-        tree = ast.parse(expression.strip(), mode="eval")
+        tree = ast.parse(single_line, mode="eval")
     except SyntaxError as e:
         raise FilterSyntaxError(f"invalid filter expression {expression!r}: {e.msg}") from e
 
